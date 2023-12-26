@@ -239,10 +239,120 @@ func TestCreateDefault(t *testing.T) {
 		t.Errorf("error opening file: %v", err)
 	}
 
-	t.Run("should have default content with 1 template", func(t *testing.T) {
-		if len(data) != 1 {
-			t.Errorf("expected one template, got %d", len(data))
+	t.Run("should have default content with 2 template", func(t *testing.T) {
+		if len(data) != 2 {
+			t.Errorf("expected two templates, got %d", len(data))
 		}
 	})
 
+}
+
+func TestPopulateTemplate(t *testing.T) {
+	templates, err := parse(mockData)
+
+	if err != nil {
+		t.Errorf("error parsing yaml: %v", err)
+	}
+
+	variables := make(map[string]string)
+
+	variables["title"] = "Test title"
+	variables["body"] = "Test body"
+
+	wantString := "Test title\n\nTest body\n"
+
+	gotString, err := PopulateTemplate(templates[0], variables)
+
+	if err != nil {
+		t.Errorf("error populating template: %v", err)
+	}
+
+	if gotString != wantString {
+		t.Errorf("expected string to be '%s', got '%s'", wantString, gotString)
+	}
+}
+
+func TestValidateTemplate(t *testing.T) {
+	testCases := []struct {
+		id          int
+		description string
+		t           Template
+		want        bool
+	}{
+		{
+			id:          1,
+			description: "should return true for valid template",
+			t: Template{
+				Name: "Test",
+				Text: "Test %{test}",
+				Variables: []Variable{
+					{Name: "test"},
+				},
+			},
+			want: true,
+		},
+		{
+			id:          2,
+			description: "should return false for empty name",
+			t: Template{
+				Name: "",
+				Text: "Test %{test}",
+				Variables: []Variable{
+					{Name: "test"},
+				},
+			},
+			want: false,
+		},
+		{
+			id:          3,
+			description: "should return false for empty text",
+			t: Template{
+				Name: "Test",
+				Text: "",
+				Variables: []Variable{
+					{Name: "test"},
+				},
+			},
+			want: false,
+		},
+		{
+			id:          4,
+			description: "should return false for empty variable name",
+			t: Template{
+				Name: "Test",
+				Text: "Test %{test}",
+				Variables: []Variable{
+					{Name: ""},
+				},
+			},
+			want: false,
+		},
+		{
+			id:          5,
+			description: "should return false for variable not found in text",
+			t: Template{
+				Name: "Test",
+				Text: "Test %{test}",
+				Variables: []Variable{
+					{Name: "test2"},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			err := validateTemplate(tc.id, tc.t)
+			if err != nil {
+				if tc.want {
+					t.Errorf("expected no error, got %v", err)
+				}
+			} else {
+				if !tc.want {
+					t.Errorf("expected error, got nil")
+				}
+			}
+		})
+	}
 }
