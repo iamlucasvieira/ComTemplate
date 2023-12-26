@@ -50,7 +50,7 @@ brews:
       owner: iamlucasvieira
       name: homebrew-tap
     description: "Easy commit templates."
-    homepage: "https://github.com/iamlucasvieira/hnews"
+    homepage: "https://github.com/iamlucasvieira/ComTemplate"
     license: "MIT"
     commit_author:
       name: goreleaserbot
