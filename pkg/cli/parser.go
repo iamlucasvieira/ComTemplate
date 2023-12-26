@@ -91,7 +91,8 @@ func CreateDefault() error {
 
     %{body}
   variables:
-    - name: issue
+    - name: title
+    - name: body
 
 `)
 
