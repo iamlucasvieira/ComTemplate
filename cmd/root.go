@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"golang.design/x/clipboard"
 
 	"github.com/iamlucasvieira/ComTemplate/pkg/cli"
 )
@@ -22,6 +23,34 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	Args: cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		data := getTemplates()
+		t := getTemplate(args[0], &data)
+
+		if t.Name == "" {
+			fmt.Printf("Template '%s' not found\n", args[0])
+			os.Exit(1)
+		}
+
+		text, err := cli.PopulateFromForm(t)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		err = clipboard.Init()
+		if err != nil {
+			fmt.Println("Error copying to clipboard")
+			fmt.Println(text)
+			os.Exit(1)
+		}
+
+		clipboard.Write(clipboard.FmtText, []byte(text))
+
+		fmt.Println(text)
+	},
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
@@ -36,6 +65,7 @@ func Execute() {
 	}
 }
 
+// GetTemplates returns a list of templates
 func getTemplates() []cli.Template {
 	data, err := cli.ReadDefault()
 	if err != nil {
@@ -47,7 +77,20 @@ Run: 'comtemplate init' to create a default file.
         `)
 		os.Exit(1)
 	}
+
+	// Turn into map
 	return data
+}
+
+// GetTemplate returns a template given its name
+func getTemplate(name string, data *[]cli.Template) cli.Template {
+	for _, t := range *data {
+		if t.Name == name {
+			return t
+		}
+	}
+
+	return cli.Template{}
 }
 
 func init() {

@@ -29,6 +29,7 @@ var listCmd = &cobra.Command{
 		}
 
 		fmt.Println(cli.RenderList("Available templates", titles))
+
 	},
 }
 
