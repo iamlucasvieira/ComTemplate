@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/atotto/clipboard"
 	"github.com/spf13/cobra"
-	"golang.design/x/clipboard"
 
 	"github.com/iamlucasvieira/ComTemplate/pkg/cli"
 )
@@ -40,14 +40,12 @@ to quickly create a Cobra application.`,
 			os.Exit(1)
 		}
 
-		err = clipboard.Init()
+		err = clipboard.WriteAll(text)
 		if err != nil {
 			fmt.Println("Error copying to clipboard")
 			fmt.Println(text)
 			os.Exit(1)
 		}
-
-		clipboard.Write(clipboard.FmtText, []byte(text))
 
 		fmt.Println(text)
 	},
