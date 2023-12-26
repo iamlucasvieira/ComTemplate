@@ -1,16 +1,16 @@
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/iamlucasvieira/ComTemplate/pkg/cli"
 )
-
-
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -36,6 +36,20 @@ func Execute() {
 	}
 }
 
+func getTemplates() []cli.Template {
+	data, err := cli.ReadDefault()
+	if err != nil {
+		fmt.Println(`Error reading default file
+
+Make sure you have a file named 'comtemplate.yml' or 'comtemplate.yaml' at the current directory.
+
+Run: 'comtemplate init' to create a default file.
+        `)
+		os.Exit(1)
+	}
+	return data
+}
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
@@ -47,5 +61,3 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
-
