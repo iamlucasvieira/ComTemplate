@@ -1,2 +1,2 @@
 # ComTemplate
-Easy commit message templating
+Easy commit message templating.
