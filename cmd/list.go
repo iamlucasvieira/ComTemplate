@@ -7,6 +7,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/iamlucasvieira/ComTemplate/pkg/cli"
 )
 
 // listCmd represents the list command
@@ -20,13 +22,13 @@ var listCmd = &cobra.Command{
     directory.
     `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
-
 		data := getTemplates()
+		titles := []string{}
 		for _, template := range data {
-			fmt.Println(template.Name)
+			titles = append(titles, template.Name)
 		}
 
+		fmt.Println(cli.RenderList("Available templates", titles))
 	},
 }
 

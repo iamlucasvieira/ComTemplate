@@ -19,3 +19,7 @@
 
 # Go workspace file
 go.work
+
+# Comptemplate files
+comtemplate.yml
+comtemplate.yaml
