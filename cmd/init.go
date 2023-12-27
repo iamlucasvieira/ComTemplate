@@ -4,7 +4,6 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -19,12 +18,17 @@ var initCmd = &cobra.Command{
 	Long: `Creates a default template file named 'comtemplate.yml'
     at the current directory.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("init called")
 		err := cli.CreateDefault()
 		if err != nil {
-			fmt.Println("Error creating default file")
+			cli.Write(
+				cli.Header("Error creating default file"),
+				err.Error(),
+			)
 			os.Exit(1)
 		}
+		cli.Write(
+			"Default file created",
+		)
 	},
 }
 

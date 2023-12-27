@@ -15,26 +15,36 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "ComTemplate",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Use:   "ct",
+	Short: "ComTemplate (ct) makes it easy to create and use git commit templates",
+	Long: `With ComTemplate you can create and use git commit templates.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+1. Initialize a default template file: 'ct init'
+- This will create a file named 'comtemplate.yml' at the current directory 
+containing default templates of git commit messages. You can edit this file to
+add your own templates.
+
+2. List available templates: 'ct list'
+- This will list all available templates in the 'comtemplate.yml' file.
+
+3. Use a template: 'ct <template-name>'
+- This will open a form to fill the template variables. After filling the form,
+the commit message will be printed to the terminal and copied to the clipboard.
+You can paste it in your commit message.
+`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		data := getTemplates()
-		t := getTemplate(args[0], &data)
-
-		if t.Name == "" {
+		t, ok := data[args[0]]
+		if !ok {
 			fmt.Printf("Template '%s' not found\n", args[0])
 			os.Exit(1)
 		}
-
+		headerStr := fmt.Sprintf("Using template '%s'", t.Name)
+		cli.Write(
+			cli.Header(headerStr),
+		)
 		text, err := cli.PopulateFromForm(t)
-
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -42,12 +52,17 @@ to quickly create a Cobra application.`,
 
 		err = clipboard.WriteAll(text)
 		if err != nil {
-			fmt.Println("Error copying to clipboard")
-			fmt.Println(text)
+			cli.Write(
+				cli.Header("Error copying to clipboard"),
+				err.Error(),
+			)
 			os.Exit(1)
 		}
 
-		fmt.Println(text)
+		cli.WriteNoMargin(
+			text,
+			cli.TextHighlight("✔ Copied to clipboard"),
+		)
 	},
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -63,8 +78,7 @@ func Execute() {
 	}
 }
 
-// GetTemplates returns a list of templates
-func getTemplates() []cli.Template {
+func getTemplates() map[string]cli.Template {
 	data, err := cli.ReadDefault()
 	if err != nil {
 		fmt.Println(`Error reading default file
@@ -77,18 +91,11 @@ Run: 'comtemplate init' to create a default file.
 	}
 
 	// Turn into map
-	return data
-}
-
-// GetTemplate returns a template given its name
-func getTemplate(name string, data *[]cli.Template) cli.Template {
-	for _, t := range *data {
-		if t.Name == name {
-			return t
-		}
+	t := make(map[string]cli.Template)
+	for _, template := range data {
+		t[template.Name] = template
 	}
-
-	return cli.Template{}
+	return t
 }
 
 func init() {

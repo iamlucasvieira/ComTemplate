@@ -25,7 +25,8 @@ var listCmd = &cobra.Command{
 		data := getTemplates()
 		titles := []string{}
 		for _, template := range data {
-			titles = append(titles, template.Name)
+			titleAndDescription := fmt.Sprintf("%s: %s", template.Name, template.Description)
+			titles = append(titles, titleAndDescription)
 		}
 
 		fmt.Println(cli.RenderList("Available templates", titles))

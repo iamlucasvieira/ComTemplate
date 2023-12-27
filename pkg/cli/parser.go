@@ -11,9 +11,10 @@ import (
 
 // Template is a git commit template
 type Template struct {
-	Name      string     `yaml:"name"`
-	Text      string     `yaml:"text"`
-	Variables []Variable `yaml:"variables"`
+	Name        string     `yaml:"name"`
+	Description string     `yaml:"description"`
+	Text        string     `yaml:"text"`
+	Variables   []Variable `yaml:"variables"`
 }
 
 // Varialbe is a variable in a git commit template
@@ -98,7 +99,8 @@ func CreateDefault() error {
 	defaultName := "comtemplate.yml"
 
 	defaultTemplate := []byte(`
-- name: simple
+- name: 1
+  description: Simple commit message
   text: |
     %{title}
 
@@ -106,7 +108,8 @@ func CreateDefault() error {
   variables:
     - name: title
     - name: body
-- name: type
+- name: 2
+  description: Commit message with type
   text: |
     [%{type}] %{title}
 
