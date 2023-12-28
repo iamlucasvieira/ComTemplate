@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -17,9 +18,59 @@ type Template struct {
 	Variables   []Variable `yaml:"variables"`
 }
 
+func (t Template) validate(id int) error {
+	var errBuilder strings.Builder
+
+	if t.Name == "" {
+		fmt.Fprintf(&errBuilder, "Template %d: name is empty\n", id)
+	}
+
+	if t.Text == "" {
+		fmt.Fprintf(&errBuilder, "Template %d: text is empty\n", id)
+	}
+
+	for varId, variable := range t.Variables {
+		if !strings.Contains(t.Text, fmt.Sprintf("%%{%s}", variable.Name)) {
+			fmt.Fprintf(&errBuilder, "Template %d - Variable %d: variable %s is not used in text\n", id, varId, variable.Name)
+		}
+
+		if validationErr := variable.validate(id, varId); validationErr != nil {
+			fmt.Fprintf(&errBuilder, "%v\n", validationErr)
+		}
+	}
+
+	if errBuilder.Len() > 0 {
+		return fmt.Errorf(errBuilder.String())
+	}
+
+	return nil
+
+}
+
 // Varialbe is a variable in a git commit template
 type Variable struct {
-	Name string `yaml:"name"`
+	Name    string   `yaml:"name"`
+	Type    string   `yaml:"type"`
+	Options []string `yaml:"options"`
+}
+
+func (v Variable) validate(TemplateId, VarId int) error {
+	inputTypes := []string{"", "input", "text", "select"}
+	var errBuilder strings.Builder
+
+	if v.Name == "" {
+		fmt.Fprintf(&errBuilder, "Template %d - Variable %d: variable name is empty\n", TemplateId, VarId)
+	}
+
+	if !slices.Contains(inputTypes, v.Type) {
+		fmt.Fprintf(&errBuilder, "Template %d - Variable %d: variable %s has invalid type %s\n", TemplateId, VarId, v.Name, v.Type)
+	}
+
+	if errBuilder.Len() > 0 {
+		return fmt.Errorf(errBuilder.String())
+	}
+
+	return nil
 }
 
 // parse turns a list of bites into a list of templates
@@ -35,7 +86,7 @@ func parse(s string) ([]Template, error) {
 
 	var validTemplates []Template
 	for i, template := range templates {
-		err = validateTemplate(i, template)
+		err = template.validate(i)
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -102,22 +153,33 @@ func CreateDefault() error {
 - name: 1
   description: Simple commit message
   text: |
-    %{title}
+    %{description}
 
     %{body}
   variables:
-    - name: title
+    - name: description 
     - name: body
+      type: text
 - name: 2
   description: Commit message with type
   text: |
-    [%{type}] %{title}
+    [%{type}] %{description}
 
     %{body}
   variables:
     - name: type
-    - name: title
+      type: select
+      options:
+        - ✨ feat
+        - 🐛 fix
+        - ♻️  refactor
+        - 📝 docs
+        - 🎨 style
+        - ✅ test
+        - ⚡️ perf
+    - name: description
     - name: body
+      type: text
 `)
 	// Check if file exists
 	if _, err := os.Stat(defaultName); err == nil {
@@ -128,35 +190,6 @@ func CreateDefault() error {
 
 	if err != nil {
 		return fmt.Errorf("error creating default template: %v", err)
-	}
-
-	return nil
-}
-
-// validateTemplate checks if a template is valid
-func validateTemplate(id int, t Template) error {
-
-	var err string
-	if t.Name == "" {
-		err += fmt.Sprintf("Template %d: name is empty\n", id)
-	}
-
-	if t.Text == "" {
-		err += fmt.Sprintf("Template %d: text is empty\n", id)
-	}
-
-	for varId, variable := range t.Variables {
-		if variable.Name == "" {
-			err += fmt.Sprintf("Template %d - Variable %d: variable name is empty\n", id, varId)
-		}
-
-		if !strings.Contains(t.Text, fmt.Sprintf("%%{%s}", variable.Name)) {
-			err += fmt.Sprintf("Template %d - Variable %d: variable %s not found in template text\n", id, varId, variable.Name)
-		}
-	}
-
-	if err != "" {
-		return fmt.Errorf(err)
 	}
 
 	return nil
@@ -189,10 +222,28 @@ func PopulateFromForm(template Template) (string, error) {
 	inputValues := make([]string, len(template.Variables))
 
 	for i, variable := range template.Variables {
-		input := huh.NewInput().
-			Title(variable.Name).
-			Value(&inputValues[i])
-
+		var input huh.Field
+		switch variable.Type {
+		case "input", "":
+			input = huh.NewInput().
+				Title(variable.Name).
+				Value(&inputValues[i])
+		case "text":
+			input = huh.NewText().
+				Title(variable.Name).
+				Value(&inputValues[i])
+		case "select":
+			var options = make([]huh.Option[string], len(variable.Options))
+			for i, option := range variable.Options {
+				options[i] = huh.NewOption(option, option)
+			}
+			input = huh.NewSelect[string]().
+				Title(variable.Name).
+				Options(options...).
+				Value(&inputValues[i])
+		default:
+			return "", fmt.Errorf("unknown variable type: %s", variable.Type)
+		}
 		inputList = append(inputList, input)
 	}
 

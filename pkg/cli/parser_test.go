@@ -339,11 +339,22 @@ func TestValidateTemplate(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			id:          6,
+			description: "should return false for invalid variable type",
+			t: Template{
+				Name: "Test",
+				Text: "Test %{test}",
+				Variables: []Variable{
+					{Name: "test", Type: "invalid"},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
-			err := validateTemplate(tc.id, tc.t)
+			err := tc.t.validate(tc.id)
 			if err != nil {
 				if tc.want {
 					t.Errorf("expected no error, got %v", err)
